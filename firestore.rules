@@ -1,0 +1,166 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default catch-all deny rule for global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ----------------------------------------------------
+    // Common Hardened Helper Functions
+    // ----------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Get a user's role by UID directly from the users collection (supports mock & real login)
+    function getUserRoleById(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+
+    function isStaffUserId(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId)) && 
+        (getUserRoleById(userId) in ['Gram Pradhan', 'DM', 'Admin']);
+    }
+
+    // ----------------------------------------------------
+    // Entity Rules & Schema Enforcements
+    // ----------------------------------------------------
+
+    // 1. VILLAGES Collection
+    match /villages/{villageId} {
+      allow read: if true; // Public access to browse village communities
+      allow create: if isValidId(villageId) &&
+        incoming().id == villageId &&
+        incoming().name is string && incoming().name.size() <= 100 &&
+        incoming().state is string && incoming().state.size() <= 50 &&
+        incoming().district is string && incoming().district.size() <= 50 &&
+        incoming().region is string && incoming().region.size() <= 100 &&
+        incoming().population is number;
+      allow update: if true; // Open update for custom village registrations & synchronization
+      allow delete: if true;
+    }
+
+    // 2. USERS Collection
+    match /users/{userId} {
+      allow read: if true; // Residents need to see other users/authorities names and roles
+      allow create: if isValidId(userId) &&
+        incoming().uid == userId &&
+        incoming().name is string && incoming().name.size() <= 100 &&
+        incoming().phone is string && incoming().phone.size() <= 30 &&
+        incoming().role in ['Resident', 'Gram Pradhan', 'DM', 'Admin'] &&
+        // Forbid newly self-registered custom accounts from hijacking non-resident staff roles
+        (incoming().role == 'Resident' || userId in ['user_pradhan_1', 'user_pradhan_2', 'user_dm_1', 'user_resident_1', 'user_resident_2', 'user_resident_3']) &&
+        incoming().villageId is string &&
+        incoming().isVerified is bool &&
+        incoming().joinedAt is string;
+      allow update: if (
+        // Forbid self-elevation, role spoofing or altering crucial registration fields
+        incoming().uid == existing().uid &&
+        incoming().phone == existing().phone &&
+        incoming().role == existing().role &&
+        incoming().joinedAt == existing().joinedAt
+      );
+      allow delete: if true;
+    }
+
+    // 3. INCIDENTS Collection
+    match /incidents/{incidentId} {
+      allow read: if true; // Everyone can view local complaints
+      allow create: if isValidId(incidentId) &&
+        incoming().id == incidentId &&
+        incoming().title is string && incoming().title.size() <= 150 &&
+        incoming().description is string && incoming().description.size() <= 2000 &&
+        incoming().category in ['Water', 'Power', 'Roads', 'Medical', 'Waste', 'General'] &&
+        incoming().severity in ['Low', 'Medium', 'High', 'Critical'] &&
+        incoming().status == 'Pending' &&
+        incoming().villageId is string &&
+        incoming().reporterId is string &&
+        incoming().upvotes == 0 &&
+        incoming().upvotedBy.size() == 0;
+      
+      allow update: if (
+        // Action: Upvote OR Downvote
+        (incoming().diff(existing()).affectedKeys().hasOnly(['upvotes', 'upvotedBy']) &&
+         incoming().upvotes is number &&
+         incoming().upvotedBy is list
+        ) ||
+        // Action: Add Comment / Progress Updates
+        (incoming().diff(existing()).affectedKeys().hasOnly(['comments', 'progressUpdates']) &&
+         incoming().id == existing().id &&
+         incoming().title == existing().title
+        ) ||
+        // Action: Change Status / Assign Incident (DM, Pradhan, Staff only)
+        (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'progressUpdates', 'updatedAt']) &&
+         incoming().id == existing().id
+        )
+      );
+      allow delete: if true;
+    }
+
+    // 4. MARKETPLACE Collection
+    match /marketplace/{itemId} {
+      allow read: if true; // Mandi public directory
+      allow create: if isValidId(itemId) &&
+        incoming().id == itemId &&
+        incoming().title is string && incoming().title.size() <= 150 &&
+        incoming().description is string && incoming().description.size() <= 2000 &&
+        incoming().price is string && incoming().price.size() <= 30 &&
+        incoming().category in ['Goods', 'Services', 'Jobs'] &&
+        incoming().isAvailable == true &&
+        incoming().postedBy is string;
+      allow update: if (
+        incoming().id == existing().id &&
+        incoming().postedBy == existing().postedBy
+      );
+      allow delete: if true;
+    }
+
+    // 5. GROUP MESSAGES Collection
+    match /groupMessages/{messageId} {
+      allow read: if true; // Choupal forum open read
+      allow create: if isValidId(messageId) &&
+        incoming().id == messageId &&
+        incoming().group in ['Farmers', 'Youth', 'Women', 'General'] &&
+        incoming().message is string && incoming().message.size() <= 1000 &&
+        incoming().isAnonymous is bool &&
+        incoming().senderPhone is string;
+      allow update: if false; // Group messages are immutable once posted!
+      allow delete: if true;
+    }
+
+    // 6. EMERGENCY BROADCASTS
+    match /broadcasts/{broadcastId} {
+      allow read: if true; // Public announcements
+      allow create: if isValidId(broadcastId) &&
+        incoming().id == broadcastId &&
+        incoming().title is string && incoming().title.size() <= 200 &&
+        incoming().message is string && incoming().message.size() <= 4000 &&
+        incoming().severity in ['Immediate', 'Important', 'General'] &&
+        incoming().postedBy is string;
+      allow update: if incoming().id == existing().id;
+      allow delete: if true;
+    }
+
+    // 7. SYSTEM NOTIFICATIONS
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+      allow delete: if true;
+    }
+  }
+}

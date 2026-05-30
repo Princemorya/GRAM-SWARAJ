@@ -1,0 +1,180 @@
+{
+  "entities": {
+    "VillageCommunity": {
+      "title": "VillageCommunity",
+      "description": "Information about a local village community.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "state": { "type": "string" },
+        "district": { "type": "string" },
+        "region": { "type": "string" },
+        "population": { "type": "number" }
+      },
+      "required": ["id", "name", "state", "district", "region", "population"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile containing roles and metadata.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["Resident", "Gram Pradhan", "DM", "Admin"] },
+        "email": { "type": "string" },
+        "villageId": { "type": "string" },
+        "isVerified": { "type": "boolean" },
+        "joinedAt": { "type": "string" }
+      },
+      "required": ["uid", "name", "phone", "role", "villageId", "isVerified", "joinedAt"]
+    },
+    "IssueComment": {
+      "title": "IssueComment",
+      "description": "A comment left on a grievance incident.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "authorName", "authorRole", "message", "createdAt"]
+    },
+    "ProgressUpdate": {
+      "title": "ProgressUpdate",
+      "description": "A progress update posted by authorities on an incident.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "updaterName": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Investigating", "Scheduled", "Resolved"] },
+        "notes": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "updaterName", "status", "notes", "timestamp"]
+    },
+    "Incident": {
+      "title": "Incident",
+      "description": "A local grievance or issues filed by residents, Pradhans or admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string", "enum": ["Water", "Power", "Roads", "Medical", "Waste", "General"] },
+        "severity": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "status": { "type": "string", "enum": ["Pending", "Investigating", "Scheduled", "Resolved"] },
+        "villageId": { "type": "string" },
+        "reporterName": { "type": "string" },
+        "reporterPhone": { "type": "string" },
+        "reporterId": { "type": "string" },
+        "isAnonymous": { "type": "boolean" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "upvotes": { "type": "number" },
+        "upvotedBy": { "type": "array" },
+        "comments": { "type": "array" },
+        "progressUpdates": { "type": "array" }
+      },
+      "required": ["id", "title", "description", "category", "severity", "status", "villageId", "reporterName", "reporterPhone", "reporterId", "createdAt", "updatedAt", "upvotes", "upvotedBy"]
+    },
+    "MarketplaceItem": {
+      "title": "MarketplaceItem",
+      "description": "A post in the local virtual marketplace (Mandi).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "string" },
+        "category": { "type": "string", "enum": ["Goods", "Services", "Jobs"] },
+        "contactName": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "isAvailable": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "postedBy": { "type": "string" }
+      },
+      "required": ["id", "title", "description", "price", "category", "contactName", "contactPhone", "isAvailable", "createdAt", "postedBy"]
+    },
+    "GroupMessage": {
+      "title": "GroupMessage",
+      "description": "A message sent inside the local group chat choupal.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "group": { "type": "string", "enum": ["Farmers", "Youth", "Women", "General"] },
+        "senderName": { "type": "string" },
+        "senderPhone": { "type": "string" },
+        "message": { "type": "string" },
+        "isAnonymous": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "villageId": { "type": "string" }
+      },
+      "required": ["id", "group", "senderName", "senderPhone", "message", "isAnonymous", "createdAt"]
+    },
+    "EmergencyBroadcast": {
+      "title": "EmergencyBroadcast",
+      "description": "An emergency message or administrative alert broadcasted to community.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "severity": { "type": "string", "enum": ["Immediate", "Important", "General"] },
+        "postedBy": { "type": "string" },
+        "villageId": { "type": "string" }
+      },
+      "required": ["id", "title", "message", "createdAt", "severity", "postedBy"]
+    },
+    "SystemNotification": {
+      "title": "SystemNotification",
+      "description": "System simulation and alert notifications saved for tracking.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "read": { "type": "boolean" },
+        "type": { "type": "string", "enum": ["sms", "system", "whatsapp"] }
+      },
+      "required": ["id", "title", "message", "timestamp", "read", "type"]
+    }
+  },
+  "firestore": {
+    "/villages/{villageId}": {
+      "schema": "VillageCommunity",
+      "description": "Local villages and community groups."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Registered and Sandbox personas."
+    },
+    "/incidents/{incidentId}": {
+      "schema": "Incident",
+      "description": "Community grievances and issue profiles."
+    },
+    "/marketplace/{marketplaceId}": {
+      "schema": "MarketplaceItem",
+      "description": "Mandi virtual marketplace listings."
+    },
+    "/groupMessages/{messageId}": {
+      "schema": "GroupMessage",
+      "description": "Subgroup choupal chat messages."
+    },
+    "/broadcasts/{broadcastId}": {
+      "schema": "EmergencyBroadcast",
+      "description": "District-level and Gram Pradhan broadcasts."
+    },
+    "/notifications/{notificationId}": {
+      "schema": "SystemNotification",
+      "description": "Activity alerts and SMS simulation trace."
+    }
+  }
+}

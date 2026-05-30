@@ -1,0 +1,6 @@
+{
+  "name": "Village Community Issue Tracker",
+  "description": "An offline-capable community hub for village residents to report critical system problems, raise issues to local authorities, track resolution times, and visualize incidents on an interactive community map.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
